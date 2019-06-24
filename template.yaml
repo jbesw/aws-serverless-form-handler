@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Serverless Form Handler - accepts a form submission from a webpage, saving the data to a DynamoDB table and sending an email via SES.
+
+Parameters:
+  ValidatedEmail:
+    Type: String
+    Description: (Required) A validated SES email address for receiving new submissions.
+    MaxLength: 70
+    Default: validated@email.com
+    MinLength: 4
+    ConstraintDescription: Required. Must be a SES verified email address.
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 10
+  Api:
+    EndpointConfiguration: EDGE
+    Cors: 
+      AllowMethods: "'OPTIONS,POST'"
+      AllowHeaders: "'Content-Type'"
+      AllowOrigin: "'*'"    
+
+Resources:
+  FormDataTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+      - AttributeName: formId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: formId
+        KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+  SubmitFormFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: submitFormFunction/
+      Handler: app.handler
+      Runtime: nodejs8.10
+      MemorySize: 128
+      Environment:
+        Variables:
+          ValidatedEmail: !Ref ValidatedEmail
+          FormDataTable: !Ref FormDataTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FormDataTable
+        - SESCrudPolicy:
+            IdentityName: !Ref ValidatedEmail
+      Events:
+        HttpPost:
+          Type: Api
+          Properties:
+            Path: '/submitForm'
+            Method: post
+
+Outputs:
+  SubmitFormFunction:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt SubmitFormFunction.Arn
+  SubmitFormFunctionIamRole:
+    Description: "Implicit IAM Role created for function"
+    Value: !GetAtt SubmitFormFunctionRole.Arn
+  FormDataTable:
+    Description: DynamoDB Table
+    Value: !Ref FormDataTable
