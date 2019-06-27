@@ -17,7 +17,7 @@ const { handler } = require('./app')
 
 // Mock event
 const event = {
-  "body": "{\"name\": \"Sender Name\",\"reply_to\": \"sender@email.com\",\"message\": \"Sender medddssage\"}"
+  "body": "{\"name\": \"Sender Name\",\"reply_to\": \"sender@email.com\",\"message\": \"A test message\"}"
 }
 
 const main = async () => {
