@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'Serverless Form Handler - accepts a form submission from a webpage,
+  saving the data to a DynamoDB table and sending an email via SES.
+
+  '
+Parameters:
+  ValidatedEmail:
+    Type: String
+    Description: (Required) A validated SES email address for receiving new submissions.
+    MaxLength: 70
+    Default: validated@email.com
+    MinLength: 4
+    ConstraintDescription: Required. Must be a SES verified email address.
+Globals:
+  Function:
+    Timeout: 10
+  Api:
+    EndpointConfiguration: EDGE
+    Cors:
+      AllowMethods: '''OPTIONS,POST'''
+      AllowHeaders: '''Content-Type'''
+      AllowOrigin: '''*'''
+Resources:
+  FormDataTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+      - AttributeName: formId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: formId
+        KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+  SubmitFormFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://jbesw-sar-public-source/ca9794e08c4d09fa76c820b9b8af1089
+      Handler: app.handler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Environment:
+        Variables:
+          ValidatedEmail:
+            Ref: ValidatedEmail
+          FormDataTable:
+            Ref: FormDataTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: FormDataTable
+      - SESCrudPolicy:
+          IdentityName:
+            Ref: ValidatedEmail
+      Events:
+        HttpPost:
+          Type: Api
+          Properties:
+            Path: /submitForm
+            Method: post
+Outputs:
+  SubmitFormFunction:
+    Description: Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - SubmitFormFunction
+      - Arn
+  SubmitFormFunctionIamRole:
+    Description: Implicit IAM Role created for function
+    Value:
+      Fn::GetAtt:
+      - SubmitFormFunctionRole
+      - Arn
+  FormDataTable:
+    Description: DynamoDB Table
+    Value:
+      Ref: FormDataTable
