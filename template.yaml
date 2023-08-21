@@ -18,10 +18,10 @@ Globals:
     Timeout: 10
   Api:
     EndpointConfiguration: EDGE
-    Cors: 
+    Cors:
       AllowMethods: "'OPTIONS,POST'"
       AllowHeaders: "'Content-Type'"
-      AllowOrigin: "'*'"    
+      AllowOrigin: "'*'"
 
 Resources:
   FormDataTable:
@@ -39,7 +39,7 @@ Resources:
     Properties:
       CodeUri: submitFormFunction/
       Handler: app.handler
-      Runtime: nodejs12.x
+      Runtime: nodejs16.x
       MemorySize: 128
       Environment:
         Variables:
